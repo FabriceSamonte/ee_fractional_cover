@@ -2,9 +2,11 @@
 
 library(tibble)
 library(dplyr)
+library(tidyr)
+library(naniar)
 
 
-star_transects_data <- read.csv("data/star_transects.csv") %>% 
+star_transects_data <- read.csv("data/star_transects.csv", header=T, na.strings=c("", "NA")) %>% 
   mutate(
     # Overstory fractions 
     overfpc = over_g / (100 - over_b),
@@ -35,4 +37,26 @@ star_transects_data <- read.csv("data/star_transects.csv") %>%
     pv = 100 * (overfpc + satmidfpc + satgroundpv),
     npv = 100 * (overdpc + overppc + satmiddpc + satmidbpc + satgroundnpv + satgroundcrypt),
     bs = 100 * satgroundbare
-)
+) 
+
+updated_star_transects <- read.csv("data/updated_star_transects.csv")
+
+google_ee_data <- updated_star_transects[, 2:46] %>%
+  na_if(c("No Data")) %>%
+  na_if(c("No data"))
+
+
+google_ee_data[colnames(google_ee_data) != "FID"] <- sapply(google_ee_data[colnames(google_ee_data) != "FID"],as.numeric) 
+
+new_star_transects <- left_join(star_transects_data, google_ee_data,
+                                by=c("FID"="FID"), 
+                                all.x = TRUE)
+
+
+
+
+write.csv(star_transects_data, file="data/fractional_components.csv", row.names = FALSE)
+
+processed_data <- read.csv("data/fractional_components.csv")
+
+colnames(processed_data)
