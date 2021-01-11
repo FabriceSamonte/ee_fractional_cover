@@ -11,6 +11,7 @@ star_transects_data <- read.csv("data/star_transects.csv", header=T, na.strings=
     # Overstory fractions 
     overfpc = over_g / (100 - over_b),
     overdpc = over_d / (100 - over_b),
+    overbpc = over_b / (100 * (1 - overfpc - overdpc))
     overppc = (over_g + over_d + over_b) / 100,
     
     # Midstory fractions
@@ -35,7 +36,7 @@ star_transects_data <- read.csv("data/star_transects.csv", header=T, na.strings=
     # npv is non-pv cover
     # bs is bare soil and rock
     pv = 100 * (overfpc + satmidfpc + satgroundpv),
-    npv = 100 * (overdpc + overppc + satmiddpc + satmidbpc + satgroundnpv + satgroundcrypt),
+    npv = 100 * (overdpc + overbpc + satmiddpc + satmidbpc + satgroundnpv + satgroundcrypt),
     bs = 100 * satgroundbare
 ) 
 
