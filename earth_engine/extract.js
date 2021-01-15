@@ -1,10 +1,14 @@
-// dataset imports from Google EE 
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
 var starTransects = ee.FeatureCollection("users/fabrice/fractional_components"),
     landsat5 = ee.ImageCollection("LANDSAT/LT05/C01/T1_SR"),
     landsat7 = ee.ImageCollection("LANDSAT/LE07/C01/T1_SR"),
     landsat8 = ee.ImageCollection("LANDSAT/LC08/C01/T1_SR"),
     MOD09A1Collection = ee.ImageCollection("MODIS/006/MOD09A1"),
     MCD43A4Collection = ee.ImageCollection("MODIS/006/MCD43A4");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+
+
+var replication = require('users/fabrice/eartheng:utils.js'); 
 
 function bitwiseExtract(value, fromBit, toBit) {
   if (toBit === undefined) toBit = fromBit;
@@ -378,7 +382,7 @@ function extractAvgLandsat5(feature) {
     map(cloudMaskL457).
     median(); 
   
-  // Hard coded band names, 
+  // Hard coded band names 
   var bandNames = ee.List(['B1', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7']);
   
   var init=ee.Feature(geom);
@@ -415,12 +419,20 @@ function extractAvgLandsat5(feature) {
     // Get summary mean surface reflectance of 3x3 grid 
     var mean= summaryPixels.aggregate_mean(bandName); 
     
+    // Get standard deviation of all values in 3x3 grid 
+    var stdDev = summaryPixels.aggregate_total_sd(bandNames); 
+    
     // Create new property name 
-    var newName = ee.String('L5_').cat(ee.String(bandName)).cat('_sf_mean');  
+    var newMeanName = ee.String('L5_').cat(ee.String(bandName)).cat('_sf_mean');
+    
+    var newStdDevName = ee.String('L5_').cat(ee.String(bandName)).cat('_sf_sd'); 
     
     return ee.Feature(ee.Algorithms.If(mean,
-      newf.set(newName, mean),
-      newf.set(newName, ee.String('No data')))); 
+      newf.set(newMeanName, mean),
+      newf.set(newMeanName, ee.String('No data'))),
+      ee.Algorithms.If(stdDev,
+      newf.set(newStdDevName, stdDev),
+      newf.set(newStdDevName, ee.String('No data')))); 
   };  
   
   return ee.Feature(bandNames.iterate(addProp, feature)); 
@@ -430,7 +442,7 @@ function extractAvgLandsat5(feature) {
 
 
 
-var landsatExtracted=ee.FeatureCollection(starTransects).
+/* var landsatExtracted=ee.FeatureCollection(starTransects).
   map(extractMODIS, true). 
   map(extractAvgLandsat5, true).
   map(extractAvgLandsat7, true).
@@ -440,9 +452,9 @@ Export.table.toDrive({
   collection: landsatExtracted,
   description: 'updated_star_transects',
   fileFormat: 'CSV'
-});
+}); */
 
-print(landsatExtracted); 
+// print(landsatExtracted); 
 
 var testFeat=ee.FeatureCollection(starTransects).first();
 
@@ -532,3 +544,14 @@ Map.addLayer(testFeatGeom);
 // Map.addLayer(landsatExtracted);
 
 // print(extract); 
+  
+  
+  
+  
+  
+
+
+
+
+
+
