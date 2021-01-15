@@ -4,13 +4,16 @@ library(tibble)
 library(dplyr)
 library(tidyr)
 library(naniar)
-
+library(stringr)
+library(ggplot2)
+library(ggpubr)
 
 star_transects_data <- read.csv("data/star_transects.csv", header=T, na.strings=c("", "NA")) %>% 
   mutate(
     # Overstory fractions 
     overfpc = over_g / (100 - over_b),
     overdpc = over_d / (100 - over_b),
+    overbpc = over_b / (100 * (1 - overfpc - overdpc)), 
     overppc = (over_g + over_d + over_b) / 100,
     
     # Midstory fractions
@@ -35,28 +38,40 @@ star_transects_data <- read.csv("data/star_transects.csv", header=T, na.strings=
     # npv is non-pv cover
     # bs is bare soil and rock
     pv = 100 * (overfpc + satmidfpc + satgroundpv),
-    npv = 100 * (overdpc + overppc + satmiddpc + satmidbpc + satgroundnpv + satgroundcrypt),
+    npv = 100 * (overdpc + overbpc + satmiddpc + satmidbpc + satgroundnpv + satgroundcrypt),
     bs = 100 * satgroundbare
-) 
+  ) 
+
+star_transects_data$landsat_img_date <- unlist(lapply(star_transects_data$fractional_calval_filename, function(x) {
+  regex_cap <- str_extract(x, "[0-9]{8}")
+  
+  paste0(substr(regex_cap, 1, 4), "-", substr(regex_cap, 5, 6), "-", substr(regex_cap, 7, 8))
+  
+  
+}))
 
 updated_star_transects <- read.csv("data/updated_star_transects.csv")
 
-google_ee_data <- updated_star_transects[, 2:46] %>%
+google_ee_data <- updated_star_transects[, colnames(updated_star_transects) == "FID" | !((colnames(updated_star_transects) %in% colnames(star_transects_data)))] %>%
   na_if(c("No Data")) %>%
   na_if(c("No data"))
 
-
-google_ee_data[colnames(google_ee_data) != "FID"] <- sapply(google_ee_data[colnames(google_ee_data) != "FID"],as.numeric) 
 
 new_star_transects <- left_join(star_transects_data, google_ee_data,
                                 by=c("FID"="FID"), 
                                 all.x = TRUE)
 
 
+write.csv(new_star_transects, file="data/star_transects_google_ee.csv", row.names = FALSE)
 
+gghistogram(data=new_star_transects[new_star_transects$npv <= 100 & new_star_transects$npv >= 0,], x="npv")
 
 write.csv(star_transects_data, file="data/fractional_components.csv", row.names = FALSE)
 
 processed_data <- read.csv("data/fractional_components.csv")
 
 colnames(processed_data)
+
+test <- updated_star_transects_v2 %>% 
+  select(ref_x, ref_y, l5_date_of_image, l7_date_of_image, fractional_calval_filename, b1_sf_mn, l5_B1_sf_mean, l7_B1_sf_mean)
+  
